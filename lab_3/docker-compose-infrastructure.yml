@@ -1,0 +1,15 @@
+version: "3.9"
+services:
+    eureka-server:
+        build:
+            context: ./eureka-server/build/docker
+            dockerfile: Dockerfile
+        ports:
+            - 8761:8761
+        hostname: eureka-server
+        container_name: eureka-server        
+    configuration-server:        
+        build:
+            context: ./config-server-microservice/build/docker
+            dockerfile: Dockerfile
+        container_name: configuration-server

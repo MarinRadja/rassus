@@ -1,0 +1,55 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.0.1'
+    id 'io.spring.dependency-management' version '1.1.0'
+    id 'com.bmuschko.docker-remote-api' version '6.7.0'
+}
+
+import com.bmuschko.gradle.docker.tasks.image.Dockerfile
+import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+
+group = 'com.radja'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '17'
+
+repositories {
+    mavenCentral()
+    maven { url 'https://artifactory-oss.prod.netflix.net/artifactory/maven-oss-candidates' }
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation  group: 'org.springframework.cloud', name: 'spring-cloud-starter-config', version: '4.0.0'
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+    implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+}
+
+ext {
+    set('springCloudVersion', "2022.0.0")
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+}
+
+task createDockerfile(type: Dockerfile) {
+    dependsOn bootJar
+    from 'openjdk:17-alpine'
+    exposePort 8080
+
+    addFile bootJar.outputs.files.singleFile.name, "aggregator/app.jar"
+    entryPoint "java", "-jar", "aggregator/app.jar"
+
+    doLast {
+        ant.copy file:bootJar.outputs.files.singleFile, todir: "${destDir.get()}"
+    }
+}
+
+
+assemble.dependsOn createDockerfile

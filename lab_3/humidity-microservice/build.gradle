@@ -1,0 +1,62 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.0.1'
+    id 'io.spring.dependency-management' version '1.1.0'
+    id 'com.bmuschko.docker-remote-api' version '6.7.0'
+}
+
+import com.bmuschko.gradle.docker.tasks.image.Dockerfile
+import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+
+group = 'com.radja.lab3'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '17'
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+    maven { url 'https://artifactory-oss.prod.netflix.net/artifactory/maven-oss-candidates' }
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    compileOnly 'org.projectlombok:lombok'
+    runtimeOnly 'com.h2database:h2'
+    annotationProcessor 'org.projectlombok:lombok'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    implementation group: 'com.opencsv', name: 'opencsv', version: '3.7'
+    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+    implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+}
+
+ext {
+    set('springCloudVersion', "2022.0.0")
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+}
+
+task createDockerfile(type: Dockerfile) {
+    dependsOn bootJar
+    from 'openjdk:17-alpine'
+    copyFile("./readings[[]4].csv", "readings[[]4].csv")
+
+    addFile bootJar.outputs.files.singleFile.name, "humidity/app.jar"
+    entryPoint "java", "-jar", "humidity/app.jar"
+
+    doLast {
+        ant.copy file:bootJar.outputs.files.singleFile, todir: "${destDir.get()}"
+    }
+}
+
+assemble.dependsOn createDockerfile

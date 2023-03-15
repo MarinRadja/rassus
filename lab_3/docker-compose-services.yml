@@ -1,0 +1,16 @@
+version: "3.9"
+services:
+    humidity:
+        build:
+            context: ./humidity-microservice/build/docker
+            dockerfile: Dockerfile
+    temperature:
+        build:
+            context: ./temperature-microservice/build/docker
+            dockerfile: Dockerfile
+    aggregator:
+        build:
+            context: ./aggregator-microservice/build/docker
+            dockerfile: Dockerfile
+        ports:
+            - 8080:8080
